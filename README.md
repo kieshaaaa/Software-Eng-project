@@ -383,25 +383,6 @@ Secondary evaluation measures include:
 - User clarity rating on a five-point scale
 - Passing critical backend and workflow tests
 
-## Four-Week Implementation Plan
-
-| Week | Backend focus | Frontend focus |
-| --- | --- | --- |
-| 1 | Supabase setup, database design, authentication, and Express setup | Wireframes, React setup, login, navigation, and report forms |
-| 2 | Report APIs, search, filters, and weighted matching | Report feed, report details, uploads, search, and filter interface |
-| 3 | Claims, authorization, handover codes, notifications, and admin APIs | Claim review, handover, notifications, and admin screens |
-| 4 | Tests, security checks, bug fixing, and deployment | Usability testing, documentation, and final deployment |
-
-Both team members will contribute to:
-
-- Requirements analysis
-- UML diagrams
-- API integration
-- Pull-request reviews
-- End-to-end testing
-- User testing
-- Documentation
-- Final project demonstration
 
 ## Scope Limitations
 
@@ -434,13 +415,11 @@ The following features may be considered after completing the core project:
 
 ## Contributors
 
-- **Student 1:** Name — Roll Number
-- **Student 2:** Name — Roll Number
+- **Student 1: Kiesha Kapoor
+- **Student 2: Kasvi Bhatia
+- **Student 3: Aarush Prabhakar
+- **Student 4: Gurleen
 
 ## Academic Note
 
 This project is an educational prototype. Any real campus deployment should obtain institutional approval and define formal moderation, privacy, data-retention, and dispute-resolution policies.
-
-## License
-
-This repository is intended for academic use. An open-source license should only be added if the project team and institution approve public reuse.
