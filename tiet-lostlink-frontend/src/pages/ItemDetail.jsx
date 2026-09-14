@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { items, findMatches } from '../data/mockItems.js'
+import api from '../api.js'
+import { toViewItem, findMatches } from '../data/mockItems.js'
 import StampBadge from '../components/StampBadge.jsx'
 
 function scoreTier(score) {
@@ -10,20 +12,61 @@ function scoreTier(score) {
 
 export default function ItemDetail() {
   const { id } = useParams()
-  const item = items.find((i) => i.id === id)
+  const [item, setItem] = useState(null)
+  const [allItems, setAllItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
-  if (!item) {
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setLoadError('')
+
+    // Fetch the full active feed once, find the one matching this report
+    // code, and reuse the rest for the client-side match calculation.
+    api
+      .get('/reports')
+      .then((res) => {
+        if (cancelled) return
+        const viewItems = res.data.reports.map(toViewItem)
+        setAllItems(viewItems)
+        setItem(viewItems.find((i) => i.id === id) || null)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setLoadError(err.response?.data?.error || 'Failed to load report.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty-state">Loading…</div>
+      </div>
+    )
+  }
+
+  if (loadError || !item) {
     return (
       <div className="page">
         <div className="empty-state">
-          <p className="section-label" style={{ marginTop: 0 }}>Report not found</p>
+          <p className="section-label" style={{ marginTop: 0 }}>
+            {loadError || 'Report not found'}
+          </p>
           <Link to="/feed" className="btn btn--ghost">Back to feed</Link>
         </div>
       </div>
     )
   }
 
-  const matches = findMatches(item)
+  const matches = findMatches(item, allItems)
   const statusKind = item.status === 'active' ? item.type : item.status
 
   return (
@@ -34,7 +77,13 @@ export default function ItemDetail() {
 
       <div className="detail-layout" style={{ marginTop: 18 }}>
         <div>
-          <div className="detail-photo">Photo not uploaded</div>
+          <div className="detail-photo">
+            {item.imageUrl ? (
+              <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              'Photo not uploaded'
+            )}
+          </div>
         </div>
 
         <div>
@@ -65,10 +114,6 @@ export default function ItemDetail() {
             <div>
               <dt>Date</dt>
               <dd>{new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
-            </div>
-            <div>
-              <dt>Reported by</dt>
-              <dd>{item.reporter}</dd>
             </div>
           </dl>
 

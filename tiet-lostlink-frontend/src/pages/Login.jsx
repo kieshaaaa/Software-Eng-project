@@ -1,19 +1,31 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
+import { supabase } from '../supabaseClient'
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+
     if (!email.endsWith('@thapar.edu')) {
       setError('Use your institutional @thapar.edu email to continue.')
       return
     }
-    setError('')
-    onLogin(email)
+
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+
+    if (error) {
+      setError('Invalid email or password.')
+      return
+    }
     navigate('/feed')
   }
 
@@ -40,14 +52,30 @@ export default function Login({ onLogin }) {
               required
             />
           </div>
+          <div className="field" style={{ marginTop: 14 }}>
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
           {error && (
             <p style={{ color: 'var(--lost)', fontSize: 13, marginTop: 10 }}>{error}</p>
           )}
-          <button type="submit" className="btn btn--primary btn--block" style={{ marginTop: 18 }}>
-            Continue
+          <button type="submit" className="btn btn--primary btn--block" style={{ marginTop: 18 }} disabled={loading}>
+            {loading ? 'Signing in…' : 'Continue'}
           </button>
         </form>
-        <p className="divider-note">Only verified TIET students can report or claim items.</p>
+        <p className="divider-note">
+          Only verified TIET students can report or claim items. New here?{' '}
+          <Link to="/register" style={{ color: 'inherit', textDecoration: 'underline' }}>
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   )

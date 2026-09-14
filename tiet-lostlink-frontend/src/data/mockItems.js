@@ -1,3 +1,4 @@
+// Display labels shown in the UI (unchanged from the original design).
 export const CATEGORIES = [
   'Backpacks & bags',
   'Water bottles & tumblers',
@@ -6,6 +7,21 @@ export const CATEGORIES = [
   'Keys & keychains',
   'Books & notebooks',
 ]
+
+// Maps each display label to the enum value the backend/database expects.
+export const CATEGORY_VALUE = {
+  'Backpacks & bags': 'backpacks_bags',
+  'Water bottles & tumblers': 'water_bottles',
+  'Wallets & purses': 'wallets_purses',
+  'Earbuds & headphone cases': 'earbuds_headphones',
+  'Keys & keychains': 'keys_keychains',
+  'Books & notebooks': 'books_notebooks',
+}
+
+// Reverse lookup: backend enum value -> display label.
+export const CATEGORY_LABEL = Object.fromEntries(
+  Object.entries(CATEGORY_VALUE).map(([label, value]) => [value, label])
+)
 
 export const LOCATIONS = [
   'LT Complex',
@@ -17,112 +33,27 @@ export const LOCATIONS = [
   'Academic Block 2',
 ]
 
-export const items = [
-  {
-    id: 'FL-0231',
-    type: 'lost',
-    status: 'active',
-    category: 'Earbuds & headphone cases',
-    title: 'Black Sony earbuds, scratched case',
-    description: 'Black Sony WF earbuds with a scratched charging case, lost near the LT complex after 2nd hour lecture.',
-    brand: 'Sony',
-    colour: 'Black',
-    location: 'LT Complex',
-    date: '2026-09-08',
-    reporter: 'Ananya R.',
-  },
-  {
-    id: 'FL-0232',
-    type: 'found',
-    status: 'active',
-    category: 'Earbuds & headphone cases',
-    title: 'Sony wireless earbuds, black case',
-    description: 'Found Sony wireless earbuds in a black charging case near the LT complex steps.',
-    brand: 'Sony',
-    colour: 'Black',
-    location: 'LT Complex',
-    date: '2026-09-08',
-    reporter: 'Karan V.',
-  },
-  {
-    id: 'FL-0219',
-    type: 'lost',
-    status: 'active',
-    category: 'Water bottles & tumblers',
-    title: 'Steel blue Milton bottle',
-    description: 'Steel blue 1L Milton bottle with a dented cap, left in the library reading room.',
-    brand: 'Milton',
-    colour: 'Blue',
-    location: 'Central Library',
-    date: '2026-09-05',
-    reporter: 'Devansh P.',
-  },
-  {
-    id: 'FL-0220',
-    type: 'found',
-    status: 'active',
-    category: 'Water bottles & tumblers',
-    title: 'Blue steel bottle, dented cap',
-    description: 'Blue steel bottle with a dented cap found on the library 2nd floor table.',
-    brand: 'Milton',
-    colour: 'Blue',
-    location: 'Central Library',
-    date: '2026-09-06',
-    reporter: 'Priya S.',
-  },
-  {
-    id: 'FL-0208',
-    type: 'lost',
-    status: 'claimed',
-    category: 'Wallets & purses',
-    title: 'Brown leather wallet',
-    description: 'Brown leather wallet with a college ID card sleeve, lost near the cafeteria.',
-    brand: '—',
-    colour: 'Brown',
-    location: 'Cafeteria',
-    date: '2026-09-01',
-    reporter: 'Ritika M.',
-  },
-  {
-    id: 'FL-0199',
-    type: 'found',
-    status: 'returned',
-    category: 'Keys & keychains',
-    title: 'Hostel keys with red keychain',
-    description: 'Set of hostel keys on a red rubber keychain, found near Hostel A entrance.',
-    brand: '—',
-    colour: 'Red',
-    location: 'Hostel A',
-    date: '2026-08-29',
-    reporter: 'Harsh T.',
-  },
-  {
-    id: 'FL-0240',
-    type: 'lost',
-    status: 'active',
-    category: 'Backpacks & bags',
-    title: 'Grey Wildcraft backpack',
-    description: 'Grey Wildcraft backpack with a broken front zip, left at the sports complex.',
-    brand: 'Wildcraft',
-    colour: 'Grey',
-    location: 'Sports Complex',
-    date: '2026-09-09',
-    reporter: 'Simran K.',
-  },
-  {
-    id: 'FL-0241',
-    type: 'found',
-    status: 'active',
-    category: 'Books & notebooks',
-    title: 'DSA notebook, spiral bound',
-    description: 'Spiral-bound notebook labelled "DSA" found in Academic Block 2, room 204.',
-    brand: '—',
-    colour: 'Green',
-    location: 'Academic Block 2',
-    date: '2026-09-10',
-    reporter: 'Aman J.',
-  },
-]
+/**
+ * Converts a raw report row from the backend (snake_case, enum category,
+ * event_date) into the shape the existing UI components (TagCard,
+ * ItemDetail, Feed) already expect (id, type, category label, date, etc).
+ */
+export function toViewItem(report) {
+  return {
+    id: report.report_code,
+    reportId: report.id,
+    type: report.report_type,
+    status: report.status,
+    category: CATEGORY_LABEL[report.category] || report.category,
+    title: report.title,
+    description: report.public_description,
+    brand: report.brand || '—',
+    colour: report.colour || '—',
+    location: report.campus_location || '—',
+    date: report.event_date,
+    imageUrl: report.image_url || null,
+  }
+}
 
 // Rough client-side stand-in for the weighted match algorithm in the
 // proposal (category 30 / brand 15 / colour 15 / location 15 / date 15 / description 10)
@@ -141,9 +72,13 @@ export function scoreMatch(a, b) {
   return score
 }
 
-export function findMatches(item) {
+/**
+ * Finds and ranks possible matches for `item` against `allItems`
+ * (both already converted via toViewItem). Used on the item detail page.
+ */
+export function findMatches(item, allItems) {
   const oppositeType = item.type === 'lost' ? 'found' : 'lost'
-  return items
+  return allItems
     .filter((i) => i.type === oppositeType && i.category === item.category && i.id !== item.id)
     .map((i) => ({ item: i, score: scoreMatch(item, i) }))
     .sort((a, b) => b.score - a.score)

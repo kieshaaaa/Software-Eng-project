@@ -1,13 +1,42 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import TagCard from '../components/TagCard.jsx'
-import { items, CATEGORIES, LOCATIONS } from '../data/mockItems.js'
+import api from '../api.js'
+import { CATEGORIES, LOCATIONS, toViewItem } from '../data/mockItems.js'
 
 export default function Feed() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+
   const [query, setQuery] = useState('')
   const [type, setType] = useState('all')
   const [category, setCategory] = useState('all')
   const [location, setLocation] = useState('all')
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setLoadError('')
+
+    api
+      .get('/reports')
+      .then((res) => {
+        if (cancelled) return
+        setItems(res.data.reports.map(toViewItem))
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setLoadError(err.response?.data?.error || 'Failed to load reports.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -21,7 +50,7 @@ export default function Feed() {
       }
       return true
     })
-  }, [query, type, category, location])
+  }, [items, query, type, category, location])
 
   return (
     <div className="page">
@@ -82,7 +111,11 @@ export default function Feed() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="empty-state">Loading reports…</div>
+      ) : loadError ? (
+        <div className="empty-state">{loadError}</div>
+      ) : filtered.length === 0 ? (
         <div className="empty-state">
           <p className="section-label" style={{ marginTop: 0 }}>No reports match those filters</p>
           <p>Try clearing a filter, or be the first to report this item.</p>
